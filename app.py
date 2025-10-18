@@ -6,10 +6,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # --------------------------------------------------------------------------
-# CRITICAL FIX: EXPLICIT CORS CONFIGURATION
+# CRITICAL FIX: EXPLICIT CORS CONFIGURATION (Kept from original)
 # --------------------------------------------------------------------------
-# This explicitly allows the common local development origins (127.0.0.1:8080 and localhost:8080)
-# and lists the allowed methods and headers, which helps bypass strict browser validation issues.
 CORS(app, resources={r"/api/*": {"origins": [
     "http://127.0.0.1:8080", 
     "http://localhost:8080"
@@ -18,30 +16,31 @@ CORS(app, resources={r"/api/*": {"origins": [
 "allow_headers": ["Content-Type", "Authorization"]
 }})
 
-# MySQL Configuration
-app.config['MYSQL_HOST'] = 'localhost'      # Your MySQL server host
-app.config['MYSQL_USER'] = 'root'           # Your MySQL username
+# MySQL Configuration (Assuming the same as your original)
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'Root12345' # <-- CHANGE THIS to your actual password
-app.config['MYSQL_DB'] = 'cinereview_db'    # The database name
-# Returns rows as dictionaries
+app.config['MYSQL_DB'] = 'cinereview_db'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor' 
 
 mysql = MySQL(app)
 
 # --------------------------------------------------------------------------
-# FETCH ALL REVIEWS (Read operation)
+# FETCH REVIEWS FOR A SPECIFIC MOVIE (Read operation)
 # --------------------------------------------------------------------------
-@app.route('/api/get_reviews', methods=['GET'])
-def get_reviews():
+# The route now accepts a movie_title as a URL parameter
+@app.route('/api/get_reviews/<movie_title>', methods=['GET'])
+def get_reviews(movie_title):
     """
-    API endpoint to fetch all existing reviews from the database.
+    API endpoint to fetch all existing reviews for a specific movie.
     """
     try:
         conn = mysql.connection
         cursor = conn.cursor()
         
-        sql = "SELECT reviewer_name, rating, review_text, created_at FROM reviews ORDER BY created_at DESC"
-        cursor.execute(sql)
+        # 💡 UPDATED SQL: Filter by movie_title
+        sql = "SELECT reviewer_name, rating, review_text, created_at FROM reviews WHERE movie_title = %s ORDER BY created_at DESC"
+        cursor.execute(sql, (movie_title,)) # Pass the movie_title as a parameter
         
         reviews = cursor.fetchall()
         cursor.close()
@@ -59,12 +58,13 @@ def get_reviews():
 
 
 # --------------------------------------------------------------------------
-# SUBMIT REVIEW (Create operation)
+# SUBMIT REVIEW FOR A SPECIFIC MOVIE (Create operation)
 # --------------------------------------------------------------------------
-@app.route('/api/submit_review', methods=['POST'])
-def submit_review():
+# The route now accepts a movie_title as a URL parameter
+@app.route('/api/submit_review/<movie_title>', methods=['POST'])
+def submit_review(movie_title):
     """
-    API endpoint to receive review data from the frontend and save it to the database.
+    API endpoint to receive review data and save it to the database, including movie_title.
     """
     if request.method == 'POST':
         try:
@@ -87,13 +87,15 @@ def submit_review():
             conn = mysql.connection
             cursor = conn.cursor()
 
-            sql = "INSERT INTO reviews (reviewer_name, rating, review_text) VALUES (%s, %s, %s)"
-            cursor.execute(sql, (reviewer_name, rating, review_text))
+            # 💡 UPDATED SQL: Insert movie_title along with the review data
+            sql = "INSERT INTO reviews (movie_title, reviewer_name, rating, review_text) VALUES (%s, %s, %s, %s)"
+            # Pass all four values to the execute method
+            cursor.execute(sql, (movie_title, reviewer_name, rating, review_text))
 
             conn.commit()
             cursor.close()
 
-            return jsonify({'message': 'Review submitted successfully!'}), 201
+            return jsonify({'message': f'Review submitted successfully for {movie_title}!'}), 201
 
         except Exception as e:
             print(f"An error occurred: {e}")

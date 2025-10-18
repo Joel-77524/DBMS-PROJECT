@@ -174,7 +174,7 @@
                 
                 <!-- Reviewer Name -->
                 <div class="mb-4">
-                    <label for="reviewer-name" class="block text-sm font-medium text-gray-300 mb-1">Your Name/Nickname</label>
+                    <label for="reviewer-name" class="block text-sm font-medium text-gray-300 mb-1">Enter the Genre</label>
                     <input type="text" id="reviewer-name" name="reviewer-name" required
                            class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white focus:ring-accent-red focus:border-accent-red transition duration-200"
                            placeholder="e.g., Horror Fanatic">
@@ -255,7 +255,9 @@
             reviewsContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Loading reviews...</p>';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/get_reviews`);
+                const movieTitle = 'The_Conjuring';
+                const response = await fetch(`${API_BASE_URL}/get_reviews/${movieTitle}`);
+                
                 if (!response.ok) {
                     throw new Error('Failed to fetch reviews from server.');
                 }
@@ -358,7 +360,9 @@
                 };
 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/submit_review`, {
+                    const movieTitle = 'The_Conjuring';
+                    const response = await fetch(`${API_BASE_URL}/submit_review/${movieTitle}`, {
+
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
